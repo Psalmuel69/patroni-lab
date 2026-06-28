@@ -1,0 +1,57 @@
+scope: mycluster
+namespace: /service/
+name: patroni1
+
+restapi:
+  listen: 0.0.0.0:8008
+  connect_address: patroni1:8008
+
+etcd3:
+  host: etcd:2379
+
+bootstrap:
+  dcs:
+    ttl: 30
+    loop_wait: 10
+    retry_timeout: 10
+    maximum_lag_on_failover: 1048576
+    postgresql:
+      use_pg_rewind: true
+      parameters:
+        wal_level: replica
+        hot_standby: "on"
+        max_wal_senders: 10
+        max_replication_slots: 10
+
+  initdb:
+    - encoding: UTF8
+    - data-checksums
+    - auth-host: scram-sha-256
+    - auth-local: scram-sha-256
+
+  pg_hba:
+    - host replication replicator 0.0.0.0/0 scram-sha-256
+    - host all all 0.0.0.0/0 scram-sha-256
+
+postgresql:
+  listen: 0.0.0.0:5432
+  connect_address: patroni1:5432
+  # CRITICAL: Append a subdirectory so Docker volumes don't cause permission conflicts
+  data_dir: /var/lib/postgresql/data/patroni
+  # CRITICAL: Tell Patroni where the Postgres 16 binaries are
+  bin_dir: /usr/lib/postgresql/16/bin
+  pgpass: /tmp/pgpass1
+  authentication:
+    replication:
+      username: replicator
+      password: replpass
+    superuser:
+      username: postgres
+      password: postgrespass
+
+  parameters:
+    unix_socket_directories: '/var/run/postgresql'
+
+tags:
+  noloadbalance: false
+  nosync: false

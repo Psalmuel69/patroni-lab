@@ -1,0 +1,100 @@
+services:
+  etcd:
+    image: quay.io/coreos/etcd:v3.5.9
+    container_name: etcd
+    command:
+      - /usr/local/bin/etcd
+      - --name=etcd0
+      - --advertise-client-urls=http://etcd:2379
+      - --listen-client-urls=http://0.0.0.0:2379
+      - --initial-advertise-peer-urls=http://etcd:2380
+      - --listen-peer-urls=http://0.0.0.0:2380
+      - --initial-cluster=etcd0=http://etcd:2380
+      - --data-dir=/etcd-data
+    ports:
+      - "2379:2379"
+    networks:
+      - patroni_net
+    restart: always
+
+  patroni1:
+    build: .
+    container_name: patroni1
+    hostname: patroni1
+    environment:
+      PATRONI_NAME: patroni1
+      PATRONI_SCOPE: mycluster
+    volumes:
+      - ./node1/patroni.yml:/etc/patroni.yml
+      - pgdata1:/var/lib/postgresql/data
+    ports:
+      - "8008:8008"
+      - "15432:5432"
+    networks:
+      - patroni_net
+    depends_on:
+      - etcd
+    restart: always
+
+  patroni2:
+    build: .
+    container_name: patroni2
+    hostname: patroni2
+    environment:
+      PATRONI_NAME: patroni2
+      PATRONI_SCOPE: mycluster
+    volumes:
+      - ./node2/patroni.yml:/etc/patroni.yml
+      - pgdata2:/var/lib/postgresql/data
+    ports:
+      - "8009:8008"
+      - "15433:5432"
+    networks:
+      - patroni_net
+    depends_on:
+      - etcd
+    restart: always
+
+  patroni3:
+    build: .
+    container_name: patroni3
+    hostname: patroni3
+    environment:
+      PATRONI_NAME: patroni3
+      PATRONI_SCOPE: mycluster
+    volumes:
+      - ./node3/patroni.yml:/etc/patroni.yml
+      - pgdata3:/var/lib/postgresql/data
+    ports:
+      - "8010:8008"
+      - "15434:5432"
+    networks:
+      - patroni_net
+    depends_on:
+      - etcd
+    restart: always
+  haproxy:
+    image: haproxy:2.8
+    container_name: haproxy
+    volumes:
+      - ./haproxy/haproxy.cfg:/usr/local/etc/haproxy/haproxy.cfg:ro
+    ports:
+      - "5000:5000"
+      - "5001:5001"
+      - "7000:7000"
+    networks:
+      - patroni_net
+    depends_on:
+      - patroni1
+      - patroni2
+      - patroni3
+    restart: always
+
+networks:
+  patroni_net:
+    driver: bridge
+
+volumes:
+  pgdata1:
+  pgdata2:
+  pgdata3:
