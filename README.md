@@ -168,7 +168,7 @@ The `-v` flag removes the `pgdata1`, `pgdata2`, and `pgdata3` volumes along with
 
 ## Known issues
 
-- `node3/patroni.yml` has its `restapi.connect_address` set to `patroni1:8008` instead of `patroni3:8008` — this looks like a copy-paste leftover and is worth fixing if you hit odd behavior with node 3's REST API being addressed correctly by peers.
+- `node3/patroni.yml` has its `restapi.connect_address` set to `patroni1:8008` instead of `patroni3:8008` — worth fixing if you hit odd behavior with node 3's REST API being addressed correctly by peers.
 
 ## License
 
